@@ -10,26 +10,30 @@ class Camera_Controller:
 		self.base = base
 		self.base.disableMouse()		
 
-		self.set_view_front()
 
 		self.active_lens = 0
 
 		self.ortho_lens = OrthographicLens()
 		self.ortho_lens.setFilmSize(12, 9)
+		self.ortho_lens.setNearFar(-100.0,100.0)
 
 		self.persp_lens = PerspectiveLens()
-		self.persp_lens.setFilmSize(12, 9)
+		self.persp_lens.setNearFar(0.001,100.0)
 
 		self.lenses = [self.persp_lens, self.ortho_lens]
 
+		self.lens_locked = False
 		self.set_lens(lens=0)
 		self.lens_locked = False
+
+
+		self.set_view(Vec3(20.0,0.0,0.0))
 
 		self.old_x = None
 		self.old_y = None
 
 
-		self.keys = [0,0,0,0,0,0]
+		self.keys = [0,0,0,0,0,0,0]
 		self.base.taskMgr.add(self.control_camera, "camera-task")
 
 
@@ -39,35 +43,25 @@ class Camera_Controller:
 		self.base.accept("2-up", self.setKeys, [1, 0])
 		self.base.accept("3", self.setKeys, [2, 1])
 		self.base.accept("3-up", self.setKeys, [2, 0])
-		self.base.accept("shift-mouse2",self.setKeys,[3,1])
-		self.base.accept("mouse2-up",self.setKeys,[3,2])
+		self.base.accept("shift-mouse3",self.setKeys,[3,1])
+		self.base.accept("mouse3-up",self.setKeys,[3,2])
 		self.base.accept("shift-mouse1",self.setKeys,[4,1])
 		self.base.accept("mouse1-up",self.setKeys,[4,2])
 		self.base.accept("5", self.setKeys, [5, 1])
 		self.base.accept("5-up", self.setKeys, [5, 2])
-
+		self.base.accept("shift-mouse2", self.setKeys, [6, 1])
+		self.base.accept("mouse2-up", self.setKeys, [6, 2])
    
 	#switch upon which buttons are pressed with if statements 
 	def setKeys(self, btn, value):
  		self.keys[btn] = value
 
-	def set_view_front(self):
-		self.pos = Vec3(5.0,0.0,0.0)
-		self.base.camera.setPos(self.pos)
-		self.base.camera.lookAt(0.0,0.0,0.0)
-		self.hpr = self.base.camera.getHpr()
+	def set_view(self, position):
+		self.pos = Vec3(position)
+		self.base.cam.setPos(self.pos)
+		self.base.cam.lookAt(0.0,0.0,0.0)
+		self.hpr = self.base.cam.getHpr()
 
-	def set_view_side(self):
-		self.pos = Vec3(0.0,5.0,0.0)
-		self.base.camera.setPos(self.pos)
-		self.base.camera.lookAt(0.0,0.0,0.0)
-		self.hpr = self.base.camera.getHpr()
-
-	def set_view_top(self):
-		self.pos = Vec3(0.0,0.0,5.0)
-		self.base.camera.setPos(self.pos)
-		self.base.camera.lookAt(0.0,0.0,0.0)
-		self.hpr = self.base.camera.getHpr()
 
 	def set_lens(self,lens):
 		if not self.lens_locked:
@@ -75,36 +69,49 @@ class Camera_Controller:
 			self.base.cam.node().setLens(self.lenses[self.active_lens])
 			self.lens_locked = True
 
-
-	def control_camera(self,task):
-
-		if self.keys[0]:
-			self.set_view_front()
-
-		if self.keys[1]:
-			self.set_view_side()
-
-		if self.keys[2]:
-			self.set_view_top()
-
-
-		if self.keys[3] == 1:
-			pan_speed = 0.01
+	def get_mouse_delta(self):
 
 			md = self.base.win.getPointer(0)
 			x = md.getX()
 			y = md.getY()
 
+			d_x = None
+			d_y = None
+
 			if self.old_x == None or self.old_y == None:
 				self.old_x = x
 				self.old_y = y
 			else:
-				d_x = (x - self.old_x) * pan_speed
-				d_y = (y - self.old_y) * pan_speed
+				d_y = (y - self.old_y) 
+				d_x = (x - self.old_x)
 				self.old_x = x
 				self.old_y = y
-				self.pos = self.pos + Vec3(d_x,d_y,0)
-				self.base.camera.setPos(self.pos)
+
+			return (d_x, d_y)
+
+	def control_camera(self,task):
+
+		if self.keys[0]:
+			self.set_view(Vec3(20.0,0.0,0.0))
+
+		if self.keys[1]:
+			self.set_view(Vec3(0.0,20.0,0.0))
+
+		if self.keys[2]:
+			self.set_view(Vec3(0.0,0.0,20.0))
+
+		if self.keys[3] == 1:
+			pan_speed = 0.005
+
+			(d_x,d_y) = self.get_mouse_delta()
+
+			if (d_x != None) and (d_y != None):
+				up = self.base.cam.getMat().getRow3(2)
+				side = self.base.cam.getMat().getRow3(0)
+				d_up = up * d_y * pan_speed
+				d_side = side * -d_x * pan_speed
+				self.pos = self.pos + d_up + d_side
+				self.base.cam.setPos(self.pos)
 
 		if self.keys[3] == 2:
 			self.old_x = None
@@ -115,20 +122,11 @@ class Camera_Controller:
 		if self.keys[4] == 1:
 			rotate_speed = 0.05
 
-			md = self.base.win.getPointer(0)
-			x = md.getX()
-			y = md.getY()
+			(d_x,d_y) = self.get_mouse_delta()
 
-			if self.old_x == None or self.old_y == None:
-				self.old_x = x
-				self.old_y = y
-			else:
-				d_x = (x - self.old_x) * rotate_speed
-				d_y = (y - self.old_y) * rotate_speed
-				self.old_x = x
-				self.old_y = y
-				self.hpr = self.hpr + Vec3(d_x,d_y,0)
-				self.base.camera.setHpr(self.hpr)
+			if (d_x != None) and (d_y != None):
+				self.hpr = self.hpr + Vec3(-d_x * rotate_speed ,-d_y * rotate_speed ,0)
+				self.base.cam.setHpr(self.hpr)
 
 		if self.keys[4] == 2:
 			self.old_x = None
@@ -142,5 +140,28 @@ class Camera_Controller:
 		if self.keys[5] == 2:
 			self.lens_locked = False
 			self.keys[5] = 0
+
+		if self.keys[6] == 1:
+			zoom_speed = 0.01
+
+			(d_x,d_y) = self.get_mouse_delta()
+
+			if (d_y != None):
+				if self.active_lens == 0:
+					forward = self.base.cam.getMat().getRow3(1)
+					d_forward = forward * d_y * zoom_speed
+					self.pos = self.pos + d_forward
+					self.base.cam.setPos(self.pos)
+
+				if self.active_lens == 1:
+					zoom_level = self.ortho_lens.getFilmSize()
+					z_x = max(zoom_level.x + d_y * zoom_speed, 0.1)
+					z_y = z_x*0.75
+					self.ortho_lens.setFilmSize(z_x , z_y)
+
+		if self.keys[6] == 2:
+			self.old_x = None
+			self.old_y = None
+			self.setKeys(6,0)
 
 		return Task.cont
