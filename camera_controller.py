@@ -10,14 +10,20 @@ class Camera_Controller:
 		self.base = base
 		self.base.disableMouse()		
 
+		x_win = self.base.win.getXSize()
+		y_win = self.base.win.getYSize()
+		aspect_win = float(x_win)/float(y_win)
+		print aspect_win
+
 
 		self.active_lens = 0
 
 		self.ortho_lens = OrthographicLens()
-		self.ortho_lens.setFilmSize(12, 9)
+		self.ortho_lens.setAspectRatio(aspect_win)
 		self.ortho_lens.setNearFar(-100.0,100.0)
 
 		self.persp_lens = PerspectiveLens()
+		self.persp_lens.setAspectRatio(aspect_win)
 		self.persp_lens.setNearFar(0.001,100.0)
 
 		self.lenses = [self.persp_lens, self.ortho_lens]
