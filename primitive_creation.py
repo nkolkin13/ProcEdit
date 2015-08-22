@@ -25,8 +25,6 @@ def make_cube():
 	cube.add_face(bbb,baa,bab)
 
 	cube.draw()
-	cube.draw_edges()
-	cube.draw_verts()
 
 	return cube
 
@@ -55,7 +53,5 @@ def make_zig():
 	cube.add_face(bbb,baa,bab)
 
 	cube.draw()
-	cube.draw_edges()
-	cube.draw_verts()
 
 	return cube

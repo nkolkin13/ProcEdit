@@ -1,11 +1,25 @@
 from panda3d.core import Light, AmbientLight, DirectionalLight, Spotlight
-from panda3d.core import Vec3, Vec4, Point3
+from panda3d.core import Vec3, Vec4, Point3, Point2
 from panda3d.core import LineSegs, TransparencyAttrib
+from direct.task.Task import Task
 
 class Edit_Env:
-	def __init__(self):
+	def __init__(self,base,selection_mode):
+		self.base = base
 		self.initialize_lighting()
 		self.draw_floor_plane(10,1)
+		self.selection_mode = selection_mode
+		self.keys = [0]
+		self.base.taskMgr.add(self.control_editor, "edit-control-task")
+
+		self.select_locked = False
+		self.base.accept("space", self.setKeys, [0, 1])
+		self.base.accept("space-up", self.setKeys, [0, 2])
+
+
+	#switch upon which buttons are pressed with if statements 
+	def setKeys(self, btn, value):
+ 		self.keys[btn] = value
 
 	def initialize_lighting(self):
 		# Create Ambient Light 
@@ -48,3 +62,65 @@ class Edit_Env:
 		rendered_edges.setAlphaScale(0.5)
 
 		return 0
+
+	def select_vertex(self):
+		mpos = Point2(self.base.mouseWatcherNode.getMouse())
+
+		#only consider the points close to the click
+		epsilon = 0.03
+		v_IDs = []
+		for v in self.base.active_obj.verts.values():
+			p3 = self.base.cam.getRelativePoint(self.base.render, v.pos)
+			p2 = Point2()
+			self.base.camLens.project(p3,p2)
+			if ((mpos-p2).length()) < epsilon:
+				v_IDs.append(v.ID)
+
+
+
+		selection = None
+
+		if len(v_IDs) == 0:
+			return 0
+		if len(v_IDs) == 1:
+			selection = v_IDs[0]
+
+		if len(v_IDs) > 1:
+			selected_ID = None 
+			selected_dist = None
+			for i in v_IDs:
+				v = self.base.active_obj.verts[i]
+				temp_dist = (self.base.cam.getPos()-v.pos).length()
+				if selected_dist == None:
+					selected_dist = temp_dist
+					selected_ID = v.ID
+				else:
+					if temp_dist < selected_dist:
+						selected_dist = temp_dist
+						selected_ID = v.ID
+			selection = selected_ID
+
+		if selection in self.edit_obj.selected_IDs:
+			self.edit_obj.selected_IDs.remove(selection)
+		else:
+			self.edit_obj.selected_IDs.add(selection)
+		self.edit_obj.draw()
+
+
+
+
+	def select(self):
+		if not self.select_locked:
+			if self.selection_mode == 'vertex':
+				self.select_vertex()
+
+			self.select_locked = True
+
+	def control_editor(self, task):
+		if self.keys[0] == 1:
+			self.select()
+		if self.keys[0] == 2:
+			self.keys[0] = 0
+			self.select_locked = False
+
+		return Task.cont

@@ -13,8 +13,6 @@ class Camera_Controller:
 		x_win = self.base.win.getXSize()
 		y_win = self.base.win.getYSize()
 		aspect_win = float(x_win)/float(y_win)
-		print aspect_win
-
 
 		self.active_lens = 0
 
