@@ -18,11 +18,11 @@ class Camera_Controller:
 
 		self.ortho_lens = OrthographicLens()
 		self.ortho_lens.setAspectRatio(aspect_win)
-		self.ortho_lens.setNearFar(-100.0,100.0)
+		self.ortho_lens.setNearFar(1.0,100.0)
 
 		self.persp_lens = PerspectiveLens()
 		self.persp_lens.setAspectRatio(aspect_win)
-		self.persp_lens.setNearFar(0.001,100.0)
+		self.persp_lens.setNearFar(1.0,100.0)
 
 		self.lenses = [self.persp_lens, self.ortho_lens]
 

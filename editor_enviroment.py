@@ -9,12 +9,15 @@ class Edit_Env:
 		self.initialize_lighting()
 		self.draw_floor_plane(10,1)
 		self.selection_mode = selection_mode
-		self.keys = [0]
+		self.keys = [0,0]
 		self.base.taskMgr.add(self.control_editor, "edit-control-task")
+		self.selected_tool = 'none'
 
 		self.select_locked = False
 		self.base.accept("space", self.setKeys, [0, 1])
 		self.base.accept("space-up", self.setKeys, [0, 2])
+		self.base.accept("g", self.setKeys, [1, 1])
+		self.base.accept("g-up", self.setKeys, [1, 2])
 
 
 	#switch upon which buttons are pressed with if statements 
@@ -69,14 +72,13 @@ class Edit_Env:
 		#only consider the points close to the click
 		epsilon = 0.03
 		v_IDs = []
-		for v in self.base.active_obj.verts.values():
-			p3 = self.base.cam.getRelativePoint(self.base.render, v.pos)
+		for key in self.edit_obj.e_objects:
+			ent = self.edit_obj.e_objects[key]
+			p3 = self.base.cam.getRelativePoint(self.base.render, ent.getPos())
 			p2 = Point2()
 			self.base.camLens.project(p3,p2)
 			if ((mpos-p2).length()) < epsilon:
-				v_IDs.append(v.ID)
-
-
+				v_IDs.append(key)
 
 		selection = None
 
@@ -89,15 +91,15 @@ class Edit_Env:
 			selected_ID = None 
 			selected_dist = None
 			for i in v_IDs:
-				v = self.base.active_obj.verts[i]
-				temp_dist = (self.base.cam.getPos()-v.pos).length()
+				v = self.edit_obj.e_objects[i]
+				temp_dist = (self.base.cam.getPos()-v.getPos()).length()
 				if selected_dist == None:
 					selected_dist = temp_dist
-					selected_ID = v.ID
+					selected_ID = i
 				else:
 					if temp_dist < selected_dist:
 						selected_dist = temp_dist
-						selected_ID = v.ID
+						selected_ID = i
 			selection = selected_ID
 
 		if selection in self.edit_obj.selected_IDs:
@@ -108,19 +110,77 @@ class Edit_Env:
 
 
 
-
 	def select(self):
-		if not self.select_locked:
-			if self.selection_mode == 'vertex':
-				self.select_vertex()
+		if self.selection_mode == 'vertex':
+			self.select_vertex()
 
-			self.select_locked = True
+	def set_mouse_origin(self):
+			if self.base.mouseWatcherNode.hasMouse():
+				self.selected_tool = 'grab'
+				self.mouse_origin = Point2(self.base.mouseWatcherNode.getMouse())
+				self.selected_locations = {}
+				for id in self.edit_obj.selected_IDs:
+					self.selected_locations[id] = self.edit_obj.e_objects[id].getPos()
+
+	def grab(self):	
+		if self.base.mouseWatcherNode.hasMouse():
+
+			mpos = Point2(self.base.mouseWatcherNode.getMouse())
+			delta = mpos - self.mouse_origin
+
+
+			near_dist = self.base.cam.node().getLens().getNear()
+			up_vec = self.base.cam.getMat().getRow3(2)
+			side_vec = self.base.cam.getMat().getRow3(0)
+
+			for id in self.edit_obj.selected_IDs:
+				#TODO: interact with selection struct/class
+				selected_obj = self.base.active_obj.verts[id]
+
+				#TODO, do this to average for efficiency
+				far_dist = (self.base.cam.getPos()-self.selected_locations[id]).length()
+
+				factor = (far_dist-near_dist)/3.0
+
+				up_delta = up_vec * factor * delta.y
+				side_delta = side_vec * factor * delta.x
+
+				selected_obj.pos = (self.selected_locations[id]+up_delta+side_delta)
+			self.base.active_obj.reset_draw()
+			self.base.active_obj.draw()
+			self.edit_obj.draw()
+
+
 
 	def control_editor(self, task):
 		if self.keys[0] == 1:
-			self.select()
+			if not self.select_locked:
+				self.select()
+				self.select_locked = True
+
 		if self.keys[0] == 2:
 			self.keys[0] = 0
 			self.select_locked = False
+
+		if self.keys[1] == 1:
+			if not self.select_locked:
+				self.select_locked = True
+				if self.selected_tool != 'grab':
+					print "grab setup"
+					self.set_mouse_origin()
+				else:
+					print "grab cleanup"
+					self.selected_tool = 'grab_done'
+
+		if self.keys[1] == 2:
+			self.select_locked = False
+			if self.selected_tool == 'grab':
+				self.grab()
+			if self.selected_tool == 'grab_done':
+				self.selected_tool = 'none'
+				self.keys[1] = 0
+
+
+
 
 		return Task.cont

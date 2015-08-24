@@ -52,6 +52,8 @@ class d_mesh:
 		self.n_edges = 0
 		self.potential_edge_IDs = [0]
 
+		self.rendered_mesh = None
+
 	def add_vertex(self,x,y,z):
 		v = d_vertex(x,y,z)
 		v.ID = self.potential_vert_IDs.pop()
@@ -94,8 +96,14 @@ class d_mesh:
 			self.potential_face_IDs.append(self.n_faces)
 		return f
 
+	def reset_draw(self):
+		self.rendered_mesh.removeNode()
+		self.rendered_mesh = None
 
 	def draw(self):
+		if self.rendered_mesh != None:
+			self.reset_draw()
+
 		format=GeomVertexFormat.getV3n3cp()
 		vdata=GeomVertexData('tri', format, Geom.UHDynamic)
 
@@ -120,8 +128,8 @@ class d_mesh:
 
 		snode = GeomNode(self.name)
 		snode.addGeom(mesh)
-		rendered_mesh = render.attachNewNode(snode)
-		rendered_mesh.setTwoSided(True)
+		self.rendered_mesh = render.attachNewNode(snode)
+		self.rendered_mesh.setTwoSided(True)
 
 
 
