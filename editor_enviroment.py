@@ -1,28 +1,23 @@
 from panda3d.core import Light, AmbientLight, DirectionalLight, Spotlight
 from panda3d.core import Vec3, Vec4, Point3, Point2
 from panda3d.core import LineSegs, TransparencyAttrib
+from mesh_selection import Mesh_Selection
+from input_listener import delta_caller
 from direct.task.Task import Task
 
 class Edit_Env:
-	def __init__(self,base,selection_mode):
+	def __init__(self,base, mesh, selection_mode):
+
+		#TODO remove circular reference to base
 		self.base = base
+
 		self.initialize_lighting()
 		self.draw_floor_plane(10,1)
 		self.selection_mode = selection_mode
-		self.keys = [0,0]
-		self.base.taskMgr.add(self.control_editor, "edit-control-task")
-		self.selected_tool = 'none'
 
-		self.select_locked = False
-		self.base.accept("space", self.setKeys, [0, 1])
-		self.base.accept("space-up", self.setKeys, [0, 2])
-		self.base.accept("g", self.setKeys, [1, 1])
-		self.base.accept("g-up", self.setKeys, [1, 2])
+		self.mesh_selection = Mesh_Selection(self.base,mesh,self.selection_mode)
 
 
-	#switch upon which buttons are pressed with if statements 
-	def setKeys(self, btn, value):
- 		self.keys[btn] = value
 
 	def initialize_lighting(self):
 		# Create Ambient Light 
@@ -66,54 +61,8 @@ class Edit_Env:
 
 		return 0
 
-	def select_vertex(self):
-		mpos = Point2(self.base.mouseWatcherNode.getMouse())
 
-		#only consider the points close to the click
-		epsilon = 0.03
-		v_IDs = []
-		for key in self.edit_obj.e_objects:
-			ent = self.edit_obj.e_objects[key]
-			p3 = self.base.cam.getRelativePoint(self.base.render, ent.getPos())
-			p2 = Point2()
-			self.base.camLens.project(p3,p2)
-			if ((mpos-p2).length()) < epsilon:
-				v_IDs.append(key)
-
-		selection = None
-
-		if len(v_IDs) == 0:
-			return 0
-		if len(v_IDs) == 1:
-			selection = v_IDs[0]
-
-		if len(v_IDs) > 1:
-			selected_ID = None 
-			selected_dist = None
-			for i in v_IDs:
-				v = self.edit_obj.e_objects[i]
-				temp_dist = (self.base.cam.getPos()-v.getPos()).length()
-				if selected_dist == None:
-					selected_dist = temp_dist
-					selected_ID = i
-				else:
-					if temp_dist < selected_dist:
-						selected_dist = temp_dist
-						selected_ID = i
-			selection = selected_ID
-
-		if selection in self.edit_obj.selected_IDs:
-			self.edit_obj.selected_IDs.remove(selection)
-		else:
-			self.edit_obj.selected_IDs.add(selection)
-		self.edit_obj.draw()
-
-
-
-	def select(self):
-		if self.selection_mode == 'vertex':
-			self.select_vertex()
-
+'''
 	def set_mouse_origin(self):
 			if self.base.mouseWatcherNode.hasMouse():
 				self.selected_tool = 'grab'
@@ -150,37 +99,4 @@ class Edit_Env:
 			self.base.active_obj.draw()
 			self.edit_obj.draw()
 
-
-
-	def control_editor(self, task):
-		if self.keys[0] == 1:
-			if not self.select_locked:
-				self.select()
-				self.select_locked = True
-
-		if self.keys[0] == 2:
-			self.keys[0] = 0
-			self.select_locked = False
-
-		if self.keys[1] == 1:
-			if not self.select_locked:
-				self.select_locked = True
-				if self.selected_tool != 'grab':
-					print "grab setup"
-					self.set_mouse_origin()
-				else:
-					print "grab cleanup"
-					self.selected_tool = 'grab_done'
-
-		if self.keys[1] == 2:
-			self.select_locked = False
-			if self.selected_tool == 'grab':
-				self.grab()
-			if self.selected_tool == 'grab_done':
-				self.selected_tool = 'none'
-				self.keys[1] = 0
-
-
-
-
-		return Task.cont
+'''
