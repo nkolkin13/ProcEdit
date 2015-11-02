@@ -24,6 +24,7 @@ def make_cube():
 	cube.add_face(bbb,bba,baa)
 	cube.add_face(bbb,baa,bab)
 
+	cube.find_edge_twins()
 	cube.draw()
 
 	return cube
@@ -52,6 +53,7 @@ def make_zig():
 	cube.add_face(bbb,bba,baa)
 	cube.add_face(bbb,baa,bab)
 
+	cube.find_edge_twins()
 	cube.draw()
 
 	return cube

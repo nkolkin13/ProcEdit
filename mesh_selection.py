@@ -157,6 +157,14 @@ class Mesh_Selection:
 			if (e.v1.ID in self.selected_vertices) and (e.v2.ID in self.selected_vertices):
 				self.selected_edges.add(e.ID)
 
+	def recalculate_average(self, verts):
+		self.average_position = Vec3(0.0,0.0,0.0)
+		for v in verts:
+			if v.ID in self.selected_vertices:
+				self.average_position = self.average_position + v.pos
+
+		self.average_position = self.average_position / len(self.selected_vertices)
+
 	def add_vertex(self, v):
 
 		#initialize to avoid divide by 0 error
@@ -230,7 +238,7 @@ class Mesh_Selection:
 		for v in self.mesh.verts.values():
 			p3 = self.base.cam.getRelativePoint(render, v.pos)
 			p2 = Point2()
-			self.base.camLens.project(p3,p2)
+			self.base.cam.node().getLens().project(p3,p2)
 			if ((mpos-p2).length()) < epsilon:
 				Vs.append(v)
 

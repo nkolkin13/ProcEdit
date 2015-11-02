@@ -2,11 +2,12 @@ from panda3d.core import Light, AmbientLight, DirectionalLight, Spotlight
 from panda3d.core import Vec3, Vec4, Point3, Point2
 from panda3d.core import LineSegs, TransparencyAttrib
 from mesh_selection import Mesh_Selection
-from input_listener import delta_caller
+from input_listener import *
 from direct.task.Task import Task
+from edit_tools import *
 
 class Edit_Env:
-	def __init__(self,base, mesh, selection_mode):
+	def __init__(self, base, mesh, selection_mode):
 
 		#TODO remove circular reference to base
 		self.base = base
@@ -16,7 +17,36 @@ class Edit_Env:
 		self.selection_mode = selection_mode
 
 		self.mesh_selection = Mesh_Selection(self.base,mesh,self.selection_mode)
+		self.tools = []
+		self.initialize_tools()
 
+
+	def initialize_tools(self):
+
+		#these are pointers
+		self.keys = self.base.keyboard_reader.keys
+		self.key_map = self.base.keyboard_reader.key_map
+
+
+		g_tool = grab_tool(self.mesh_selection)
+		g_tool.register_tool(self.keys,self.key_map,'toggle','g')
+		self.tools.append(g_tool)
+
+		s_tool = scale_tool(self.mesh_selection)
+		s_tool.register_tool(self.keys,self.key_map,'toggle','s')
+		self.tools.append(s_tool)
+
+		r_tool = rotate_tool(self.mesh_selection)
+		r_tool.register_tool(self.keys,self.key_map,'toggle','r')
+		self.tools.append(r_tool)
+
+		e_tool = extrude_tool(self.mesh_selection)
+		e_tool.register_tool(self.keys,self.key_map,'toggle','e')
+		self.tools.append(e_tool)
+
+		sub_tool = subdivide_tool(self.mesh_selection)
+		sub_tool.register_tool(self.keys,self.key_map,'delta','/')
+		self.tools.append(sub_tool)
 
 
 	def initialize_lighting(self):

@@ -1,4 +1,4 @@
-
+from panda3d.core import ModifierButtons
 
 class Keyboard_Reader:
 
@@ -8,9 +8,9 @@ class Keyboard_Reader:
 		self.key_map = {} 
 		self.keys = []
 
-		accepted_keys = ['shift', 'mouse1', 'mouse2', 'mouse3','space', '1', '2', '3', '5']
-		shift_combo_keys = ['mouse1', 'mouse2', 'mouse3']
-
+		accepted_keys = ['shift', 'control', 'mouse1', 'mouse2', 'mouse3','space','wheel_up','wheel_down', 'g','s','r','e','/', 'x', 'y', 'z', '1', '2', '3', '5']
+		base.mouseWatcherNode.set_modifier_buttons(ModifierButtons())
+		base.buttonThrowers[0].node().set_modifier_buttons(ModifierButtons())
 
 
 		index = 0
@@ -21,7 +21,7 @@ class Keyboard_Reader:
 			self.base.accept(k+'-up', self.setKeys, [index, 0])
 
 			index += 1
-
+	'''
 		for k in shift_combo_keys:
 			true_k = 'shift-'+k
 			self.key_map[true_k] = index
@@ -31,7 +31,7 @@ class Keyboard_Reader:
 			self.base.accept('shift-up', self.setKeys, [index, 0])
 
 			index += 1
-
+	'''
 
 	def setKeys(self,index,val):
 		self.keys[index] = val
